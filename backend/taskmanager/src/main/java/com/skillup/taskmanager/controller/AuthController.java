@@ -9,7 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -33,21 +32,17 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<JwtAuthResponse> login(@RequestBody JwtAuthRequest request) {
-        try {
-            this.authenticate(request.getUsername(), request.getPassword());
-            UserDetails userDetails = this.userDetailsService.loadUserByUsername(request.getUsername());
-            String token = this.jwtTokenHelper.generateToken(userDetails);
+        this.authenticate(request.getUsername(), request.getPassword());
+        UserDetails userDetails = this.userDetailsService.loadUserByUsername(request.getUsername());
+        String token = this.jwtTokenHelper.generateToken(userDetails);
 
-            JwtAuthResponse response = new JwtAuthResponse();
-            response.setToken(token);
-            return new ResponseEntity<>(response, HttpStatus.OK);
-        } catch (BadCredentialsException e) {
-            throw new RuntimeException("Invalid username or password");
-        }
+        JwtAuthResponse response = new JwtAuthResponse();
+        response.setToken(token);
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @PostMapping("/register")
-    public ResponseEntity<UserDto> register(@RequestBody UserDto userDto) {
+    public ResponseEntity<?> register(@RequestBody UserDto userDto) {
         UserDto registeredUser = userService.registerNewUser(userDto);
         return new ResponseEntity<>(registeredUser, HttpStatus.CREATED);
     }
