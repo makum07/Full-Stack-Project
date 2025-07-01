@@ -1,7 +1,9 @@
 package com.skillup.taskmanager.controller;
 
 import com.skillup.taskmanager.dto.CreateTableRequest;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
@@ -16,8 +18,9 @@ public class DatabaseController {
     private final String dbUser = "postgres";
     private final String dbPassword = "Manohar@psql07";
 
-    // 🔹 1. Create database
+    // 🔹 1. Create database - ADMIN only
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public String createDatabase(@RequestParam String dbName) {
         try (Connection conn = DriverManager.getConnection(baseUrl + "postgres", dbUser, dbPassword);
              Statement stmt = conn.createStatement()) {
@@ -33,14 +36,14 @@ public class DatabaseController {
         }
     }
 
-    // 🔹 2. Create table in a given database
+    // 🔹 2. Create table in a given database - ADMIN only
     @PostMapping("/table")
+    @PreAuthorize("hasRole('ADMIN')")
     public String createTable(@RequestBody CreateTableRequest request) {
         String dbName = request.getDbName();
         String tableName = request.getTableName();
         List<CreateTableRequest.Field> fields = request.getFields();
 
-        // Convert fields into SQL string
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < fields.size(); i++) {
             CreateTableRequest.Field field = fields.get(i);
@@ -60,5 +63,4 @@ public class DatabaseController {
             return "Error: " + e.getMessage();
         }
     }
-
 }

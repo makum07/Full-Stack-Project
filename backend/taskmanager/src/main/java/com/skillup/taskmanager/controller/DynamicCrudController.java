@@ -1,6 +1,7 @@
 package com.skillup.taskmanager.controller;
 
 import com.skillup.taskmanager.dto.DynamicRecordRequest;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.sql.*;
@@ -15,18 +16,17 @@ public class DynamicCrudController {
     private final String dbUser     = "postgres";
     private final String dbPassword = "Manohar@psql07";
 
-    // -------------------------------
-    // 1. Create record
-    // -------------------------------
+    // 🔒 1. Create record (Admin only)
     @PostMapping("/create")
+    @PreAuthorize("hasRole('ADMIN')")
     public String insertRecord(@RequestBody DynamicRecordRequest req) {
         String url   = baseUrl + req.getDbName();
         String table = req.getTableName();
         Map<String, Object> data = req.getData();
 
-        String cols        = String.join(", ", data.keySet());
-        String placeholders= String.join(", ", Collections.nCopies(data.size(), "?"));
-        String sql         = "INSERT INTO " + table + " (" + cols + ") VALUES (" + placeholders + ")";
+        String cols         = String.join(", ", data.keySet());
+        String placeholders = String.join(", ", Collections.nCopies(data.size(), "?"));
+        String sql          = "INSERT INTO " + table + " (" + cols + ") VALUES (" + placeholders + ")";
 
         try (Connection conn = DriverManager.getConnection(url, dbUser, dbPassword);
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -34,7 +34,6 @@ public class DynamicCrudController {
             int idx = 1;
             for (String col : data.keySet()) {
                 Object val = data.get(col);
-                // simple rule: if column name contains "date", cast to java.sql.Date
                 if (val instanceof String && col.toLowerCase().contains("date")) {
                     stmt.setDate(idx++, java.sql.Date.valueOf((String) val));
                 } else {
@@ -49,18 +48,17 @@ public class DynamicCrudController {
         }
     }
 
-    // -------------------------------
-    // 2. Read all records
-    // -------------------------------
+    // 🔒 2. Read all records (Admin only)
     @PostMapping("/read")
+    @PreAuthorize("hasRole('ADMIN')")
     public List<Map<String, Object>> getRecords(@RequestBody DynamicRecordRequest req) {
         String url   = baseUrl + req.getDbName();
         String table = req.getTableName();
         List<Map<String, Object>> rows = new ArrayList<>();
 
         try (Connection conn = DriverManager.getConnection(url, dbUser, dbPassword);
-             Statement stmt   = conn.createStatement();
-             ResultSet rs     = stmt.executeQuery("SELECT * FROM " + table)) {
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT * FROM " + table)) {
 
             ResultSetMetaData m = rs.getMetaData();
             int colCount = m.getColumnCount();
@@ -78,15 +76,14 @@ public class DynamicCrudController {
         }
     }
 
-    // -------------------------------
-    // 3. Update record by ID
-    // -------------------------------
+    // 🔒 3. Update record by ID (Admin only)
     @PutMapping("/update/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public String updateRecord(
             @PathVariable Long id,
             @RequestBody DynamicRecordRequest req
     ) {
-        String url   = baseUrl + req.getDbName();
+        String url = baseUrl + req.getDbName();
         String table = req.getTableName();
         Map<String, Object> data = req.getData();
 
@@ -106,6 +103,7 @@ public class DynamicCrudController {
                     stmt.setObject(idx++, val);
                 }
             }
+
             stmt.setLong(idx, id);
             stmt.executeUpdate();
             return "Record updated successfully.";
@@ -114,15 +112,14 @@ public class DynamicCrudController {
         }
     }
 
-    // -------------------------------
-    // 4. Delete record by ID
-    // -------------------------------
+    // 🔒 4. Delete record by ID (Admin only)
     @DeleteMapping("/delete/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public String deleteRecord(
             @PathVariable Long id,
             @RequestBody DynamicRecordRequest req
     ) {
-        String url   = baseUrl + req.getDbName();
+        String url = baseUrl + req.getDbName();
         String table = req.getTableName();
 
         String sql = "DELETE FROM " + table + " WHERE id = ?";
